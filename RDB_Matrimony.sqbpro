@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="D:/SQLLITE FOR DBMS NEU/DATABASE BY ME/SQL FOR ME.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="pragmas structure browser query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="125"/><column_width id="3" width="2045"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,9:mainuser_data"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1">CREATE TABLE &quot;User_Data&quot; (
+	&quot;user_name&quot;	varchar,
+	&quot;first_name&quot;	TEXT,
+	&quot;last_name&quot;	TEXT,
+	&quot;gender&quot;	TEXT,
+	&quot;religion&quot;	TEXT,
+	&quot;DOB&quot;	DATE,
+	&quot;Height&quot;	NUMERIC,
+	&quot;career&quot;	TEXT,
+	&quot;Place_work&quot;	TEXT,
+	&quot;Photo_Link&quot;	VARCHAR,
+	&quot;Hobbies&quot;	TEXT,
+	&quot;preference_type&quot;	TEXT,
+	PRIMARY KEY (user_name)
+	);
+	
+	CREATE TABLE &quot;Registration&quot; (
+	&quot;reg_id&quot;	INTEGER,
+	&quot;user_name&quot;	char,
+	&quot;reg_by&quot;	TEXT,
+	&quot;reg_date&quot;	TEXT,
+	&quot;reg_mob_no&quot;	NUMERIC,
+	&quot;email&quot;	char,
+	&quot;password&quot;	TEXT,
+	&quot;photo_id&quot;	TEXT,
+	&quot;time_updated&quot;	datetime,
+	&quot;Photo_Link&quot;	TEXT,
+	PRIMARY KEY (reg_id)
+)
+CREATE TABLE &quot;photos&quot; (
+    &quot;photo_id&quot;	TEXT,
+	&quot;time_updated&quot;	datetime,
+	&quot;Photo_Link&quot;	TEXT,
+	PRIMARY KEY (photo_id)
+	)
+    
+
+INSERT INTO user_data (reg_id)
+SELECT reg_id FROM Registration
+
+INSERT INTO Registration (first_name)
+SELECT first_name FROM user_data
+
+CREATE TABLE &quot;filter&quot; (
+	&quot;filter_no&quot;	BLOB,
+	&quot;reg_id_filter&quot;	INTEGER,
+	&quot;date_filter_changed&quot;	DATETIME,
+	&quot;filter_type&quot;	CHAR,
+	&quot;date_fav_changed&quot;	DATETIME,
+	PRIMARY KEY(&quot;filter_no&quot;)
+)
+
+INSERT INTO filter (user_name) 
+SELECT user_name FROM user_data
+
+
+CREATE TABLE &quot;Favorites&quot; (
+	&quot;fav_reg_id&quot;	INTEGER,
+	&quot;fav_status&quot;	TEXT,
+	&quot;date_fav_changed&quot;	DATETIME,
+	PRIMARY KEY(&quot;fav_reg_id&quot;)
+)
+
+INSERT INTO Favorites (user_name) 
+SELECT user_name FROM user_data
+
+CREATE TABLE &quot;Subscribers&quot; (
+	&quot;premium_id&quot;	TEXT,
+	&quot;Contact&quot;	NUMERIC,
+	&quot;date_subscribed&quot;	datetime,
+	PRIMARY KEY(&quot;premium_id&quot;)
+)
+
+INSERT INTO Subscribers (sub_reg_id) SELECT reg_id FROM Registration
+
+CREATE TABLE &quot;Events&quot; (
+	&quot;event_id&quot;	char,
+	&quot;premium_id&quot;	TEXT,
+	&quot;event_date&quot;	datetime,
+	PRIMARY KEY(&quot;event_id&quot;)
+)
+
+INSERT INTO Events (user_name) SELECT user_name FROM user_data
+
+CREATE TABLE &quot;Chats&quot; (
+	&quot;Chat_id&quot;	TEXT,
+	&quot;participant_name&quot;	TEXT,
+	&quot;time_start&quot;	datetime,
+	&quot;time_end&quot;	datetime
+	PRIMARY KEY (Chat_id)
+)
+INSERT INTO Chats (reg_id) SELECT reg_id FROM Registration
+
+CREATE TABLE &quot;Messages&quot; (
+	&quot;message_id&quot;	TEXT,
+	&quot;Chat_id&quot;	TEXT,
+	&quot;sent_user_message&quot;	BLOB,
+	&quot;recieved_user_message&quot;	BLOB,
+	&quot;timestamp&quot;	datetime,
+	PRIMARY KEY(&quot;message_id&quot;)
+)
+
+INSERT INTO Messages (Chat_id) SELECT Chat_id FROM Chats
+
+--Include atleast 5 select statements--
+--1. Get the percent of females and males 
+(SELECT count(user_name) as cm
+FROM user_data
+WHERE user_data.gender = &quot;Male&quot; 
+GROUP BY (gender) );-- Males- 105)
+
+(SELECT count(user_name) as tc--total count is 200
+FROM user_data)
+
+SELECT ROUND(CAST((SELECT count(user_name) as cm
+FROM user_data
+WHERE user_data.gender = &quot;Male&quot;) AS FLOAT)/ CAST((SELECT count(user_name) as tc--total count is 200
+FROM user_data)
+ AS FLOAT)*100, 2) AS percent_males
+FROM user_data-- 52.5%Males and 47.5%Females
+
+
+--2.Find the email or contact of the person with a specific chat_id
+
+SELECT Registration.email,Registration.reg_id,Registration.reg_mob_no,
+Chats.Chat_id,Chats.participant_name
+FROM Registration 
+JOIN Chats ON Registration.reg_id = Chats.reg_id
+WHERE Chats.Chat_id = &quot;e5ff09e7-5262-4a68-84d6-d4597724c57c&quot;
+GROUP BY Registration.email,Registration.reg_id,Registration.reg_mob_no,
+Chats.Chat_id,Chats.participant_name-- email-abenedicto4n@myspace.com, Contact-598-965-2922
+
+--3.Find out when did the user with first name Camile subscribed and their premium id--
+SELECT first_name,reg_mob_no,Subscribers.date_subscribed,Subscribers.premium_id
+FROM Registration
+JOIN Subscribers On Registration.reg_id=Subscribers.sub_reg_id
+WHERE Registration.first_name= &quot;Camile&quot;
+GROUP BY first_name,reg_mob_no,Subscribers.date_subscribed,Subscribers.premium_id-- date_subscribed= 12/16/2021 12:18
+
+--4. Find out the count of active current Favorites
+SELECT count(fav_status)
+FROM Favorites
+WHERE fav_status = &quot;accepted_current&quot; -- 56 total active current Favorites
+
+--5.Find the number,chat_id and gender of active current female Favorites--
+SELECT Registration.reg_mob_no,Registration.email,Registration.reg_id, user_data.gender, Chats.Chat_id,Favorites.fav_status
+FROM Registration
+JOIN Favorites ON Registration.reg_id = Favorites.fav_reg_id
+JOIN Chats ON Favorites.fav_reg_id = Chats.reg_id
+JOIN user_data ON Chats.reg_id = user_data.reg_id
+WHERE Favorites.fav_status = &quot;accepted_current&quot; AND user_data.gender = &quot;Female&quot;
+GROUP BY Registration.reg_mob_no,Registration.email,Registration.reg_id, user_data.gender, Chats.Chat_id,Favorites.fav_status
+ORDER BY 3; -- 26 out of 56 are female
+
+--6. what are the message details of a specific username
+SELECT *, user_data.user_name,Messages.recieved_user_message,Messages.sent_user_message,Messages.timestamp
+from Chats
+JOIN user_data on Chats.reg_id=user_data.reg_id
+JOIN Messages on Chats.Chat_id= Messages.Chat_id
+GROUP BY user_data.user_name,Messages.recieved_user_message,Messages.sent_user_message,Messages.timestamp
+ORDER BY 2;
+
+--7. find out a profile who works in twitterbeat--
+SELECT Place_work,user_name,Photo_Link,Height
+FROM user_data
+WHERE Place_work LIKE '%Twit%'
+
+--8 How many males have height less than 5.6 
+SELECT *
+FROM user_data
+WHERE Height &lt; 5.6 AND gender = &quot;Male&quot; -- 56 males
+
+--9 How many males have height more than 5.6 and have Active favorites
+SELECT *, Favorites.fav_status
+FROM user_data
+JOIN Favorites on user_data.reg_id=Favorites.fav_reg_id
+WHERE Height &gt; 5.6 AND Favorites.fav_status = &quot;accepted_current&quot; AND gender = &quot;Male&quot;
+GROUP BY user_data.user_name-- 13 males
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
